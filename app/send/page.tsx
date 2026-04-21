@@ -103,8 +103,11 @@ export default function SendPage() {
     channelRef.current = channel;
 
     channel.onopen = async () => {
+      console.log('[Send] DataChannel opened, starting transfer in 300ms...');
       statusRef.current = 'transferring';
       setStatus('transferring');
+      // Small delay to ensure receiver's ondatachannel handler is ready
+      await new Promise((r) => setTimeout(r, 300));
       try {
         await sendFile(channel, file, encryptEnabled ? code : null, (prog: number, spd: number, tx: number) => {
           setProgress(prog); setSpeed(spd); setTransferred(tx);
@@ -112,14 +115,15 @@ export default function SendPage() {
         statusRef.current = 'done';
         setStatus('done');
         if (burnMode) { signalingRef.current?.send({ type: 'burn' }); setTimeout(cleanup, 800); }
-      } catch {
-        setError('Transfer failed. Please try again.');
+      } catch (e: any) {
+        console.error('[Send] Transfer failed:', e);
+        setError(`Transfer failed: ${e?.message || 'Unknown error'}`);
         statusRef.current = 'idle';
         setStatus('idle');
       }
     };
 
-    channel.onerror = () => { setError('DataChannel error.'); setStatus('idle'); };
+    channel.onerror = (e: any) => { console.error('[Send] Channel error:', e); setError('DataChannel error. Try again.'); setStatus('idle'); };
 
     const signaling = new SignalingClient(code, async (msg: any) => {
       if (msg.type === 'peer_joined') { statusRef.current = 'connected'; setStatus('connected'); }
