@@ -106,9 +106,18 @@ export default function SendPage() {
         await sendFile(channel, file, encryptEnabled ? code : null, (prog: number, spd: number, tx: number) => {
           setProgress(prog); setSpeed(spd); setTransferred(tx);
         });
+        log('✅ All chunks sent — waiting for buffer to drain…');
+        // Wait for DataChannel send buffer to fully empty before burning
+        while (channel.bufferedAmount > 0) {
+          await new Promise(r => setTimeout(r, 100));
+        }
+        log('✅ Buffer drained — transfer complete!');
         statusRef.current = 'done'; setStatus('done');
-        log('✅ Transfer complete!');
-        if (burnMode) { signalingRef.current?.send({ type: 'burn' }); setTimeout(cleanup, 800); }
+        if (burnMode) {
+          // Only close signaling — do NOT close pc so DataChannel can finish delivering
+          signalingRef.current?.send({ type: 'burn' });
+          setTimeout(() => signalingRef.current?.close(), 3000);
+        }
       } catch (e: any) {
         log(`❌ Transfer failed: ${e?.message}`);
         setError(`Transfer failed: ${e?.message}`);
