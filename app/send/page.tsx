@@ -93,7 +93,7 @@ export default function SendPage() {
       (candidate: any) => signalingRef.current?.send({ type: 'candidate', candidate }),
       null,
       (state: string) => {
-        if (state === 'connected')  { statusRef.current = 'connected';  setStatus('connected'); }
+        if (state === 'connected') { statusRef.current = 'connected'; setStatus('connected'); }
         if (state === 'failed' || state === 'disconnected') { statusRef.current = 'idle'; setStatus('idle'); }
       }
     );
@@ -127,7 +127,7 @@ export default function SendPage() {
 
     const signaling = new SignalingClient(code, async (msg: any) => {
       if (msg.type === 'peer_joined') { statusRef.current = 'connected'; setStatus('connected'); }
-      if (msg.type === 'answer')    await handleAnswer(pc, msg.answer);
+      if (msg.type === 'answer') await handleAnswer(pc, msg.answer);
       if (msg.type === 'candidate') await addIceCandidate(pc, msg.candidate);
       if (msg.type === 'peer_disconnected' && statusRef.current !== 'done') {
         setError('Receiver disconnected.'); statusRef.current = 'waiting'; setStatus('waiting');
