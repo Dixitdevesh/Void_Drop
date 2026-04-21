@@ -47,6 +47,7 @@ function ReceivePageInner() {
   const [mode, setMode] = useState<'input' | 'scan'>('input');
   const [codeInput, setCodeInput] = useState('');
   const [status, setStatus] = useState('idle');
+  const [initializing, setInitializing] = useState(false); // shows loading when URL has code
   const [meta, setMeta] = useState<any>(null);
   const [progress, setProgress] = useState(0);
   const [speed, setSpeed] = useState(0);
@@ -116,10 +117,21 @@ function ReceivePageInner() {
 
   useEffect(() => {
     const c = searchParams?.get('code');
-    if (c) joinSession(c);
+    if (c) {
+      const normalized = c.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+      if (normalized.length === 5) {
+        setCodeInput(normalized);
+        setInitializing(true); // show spinner immediately
+        // Small delay to let React render before joinSession
+        setTimeout(() => {
+          setInitializing(false);
+          joinSession(normalized);
+        }, 400);
+      }
+    }
     return () => cleanup();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 1.5rem 2rem' }}>
@@ -142,8 +154,21 @@ function ReceivePageInner() {
         </motion.div>
 
         <AnimatePresence mode="wait">
+          {/* ── Initializing (QR URL opened) ──────────────────────── */}
+          {initializing && (
+            <motion.div key="init" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', padding: '2rem' }}>
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                style={{ width: 48, height: 48, borderRadius: '50%', border: '3px solid rgba(155,48,255,0.2)', borderTop: '3px solid #9b30ff' }} />
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ margin: 0, color: '#fff', fontWeight: 600 }}>Opening session…</p>
+                <p style={{ margin: '0.4rem 0 0', fontSize: '0.8rem', ...S.muted, ...S.mono }}>Code: {codeInput}</p>
+              </div>
+            </motion.div>
+          )}
           {/* ── Idle: code entry ─────────────────────────────────── */}
-          {status === 'idle' && (
+          {status === 'idle' && !initializing && (
+
             <motion.div key="idle" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Mode tabs */}
               <div style={{ display: 'flex', gap: 6, padding: 4, borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
