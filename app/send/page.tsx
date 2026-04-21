@@ -150,7 +150,7 @@ export default function SendPage() {
   }, [file, encryptEnabled, burnMode, cleanup]);
 
   const onDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if (f) setFile(f); };
-  const sessionUrl = typeof window !== 'undefined' ? `${window.location.origin}/receive?code=${sessionCode}` : '';
+  const sessionUrl = typeof window !== 'undefined' ? `${window.location.origin}/receive#${sessionCode}` : '';
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 1.5rem 2rem' }}>
@@ -199,15 +199,12 @@ export default function SendPage() {
               </div>
               <div style={{ ...S.glass, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
                 <QRDisplay sessionCode={sessionCode} sessionUrl={sessionUrl} />
-                {/* Share link — receiver can click instead of typing */}
-                <div style={{ width: '100%', display: 'flex', gap: '0.5rem' }}>
-                  <div style={{ flex: 1, padding: '0.6rem 0.75rem', borderRadius: 10, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(155,48,255,0.2)', fontSize: '0.72rem', ...S.mono, color: '#7a7898', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {sessionUrl}
-                  </div>
+                {/* Share — copy link without showing the URL */}
+                <div style={{ width: '100%', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                   <button
                     onClick={() => { navigator.clipboard.writeText(sessionUrl); }}
-                    style={{ padding: '0.6rem 1rem', borderRadius: 10, background: 'rgba(155,48,255,0.15)', border: '1px solid rgba(155,48,255,0.4)', color: '#c084fc', cursor: 'pointer', fontSize: '0.8rem', ...S.mono, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    📋 Copy Link
+                    style={{ padding: '0.7rem 1.5rem', borderRadius: 12, background: 'rgba(155,48,255,0.15)', border: '1px solid rgba(155,48,255,0.4)', color: '#c084fc', cursor: 'pointer', fontSize: '0.85rem', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    📋 Copy Receive Link
                   </button>
                 </div>
               </div>

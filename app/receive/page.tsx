@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { formatBytes } from '@/lib/utils/formatBytes';
@@ -9,6 +9,18 @@ import { createPeerConnection, createAnswer, addIceCandidate } from '@/lib/webrt
 import { receiveFile, downloadBlob } from '@/lib/webrtc/receiver';
 
 const QRScanner = dynamic(() => import('@/components/QRScanner'), { ssr: false });
+
+// Read code from hash OR query param, then clean URL
+function getCodeFromUrl(): string {
+  if (typeof window === 'undefined') return '';
+  // Try hash first: /receive#XXXXX
+  const hash = window.location.hash.slice(1).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+  if (hash.length === 5) return hash;
+  // Fallback: /receive?code=XXXXX
+  const params = new URLSearchParams(window.location.search);
+  const q = (params.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+  return q;
+}
 
 /* ── Shared styles ────────────────────────────────────────────────── */
 const S = {
@@ -43,7 +55,6 @@ function StatusBadge({ status }: { status: string }) {
 
 function ReceivePageInner() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [mode, setMode] = useState<'input' | 'scan'>('input');
   const [codeInput, setCodeInput] = useState('');
   const [status, setStatus] = useState('idle');
@@ -116,22 +127,20 @@ function ReceivePageInner() {
   }, [cleanup, updateStatus]);
 
   useEffect(() => {
-    const c = searchParams?.get('code');
-    if (c) {
-      const normalized = c.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
-      if (normalized.length === 5) {
-        setCodeInput(normalized);
-        setInitializing(true); // show spinner immediately
-        // Small delay to let React render before joinSession
-        setTimeout(() => {
-          setInitializing(false);
-          joinSession(normalized);
-        }, 400);
-      }
+    const c = getCodeFromUrl();
+    if (c.length === 5) {
+      // Clean the URL immediately — remove hash/query so it's not visible
+      window.history.replaceState({}, '', '/receive');
+      setCodeInput(c);
+      setInitializing(true);
+      setTimeout(() => {
+        setInitializing(false);
+        joinSession(c);
+      }, 400);
     }
     return () => cleanup();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, []);
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 1.5rem 2rem' }}>
