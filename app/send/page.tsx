@@ -190,6 +190,17 @@ export default function SendPage() {
               </div>
               <div style={{ ...S.glass, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
                 <QRDisplay sessionCode={sessionCode} sessionUrl={sessionUrl} />
+                {/* Share link — receiver can click instead of typing */}
+                <div style={{ width: '100%', display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ flex: 1, padding: '0.6rem 0.75rem', borderRadius: 10, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(155,48,255,0.2)', fontSize: '0.72rem', ...S.mono, color: '#7a7898', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {sessionUrl}
+                  </div>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(sessionUrl); }}
+                    style={{ padding: '0.6rem 1rem', borderRadius: 10, background: 'rgba(155,48,255,0.15)', border: '1px solid rgba(155,48,255,0.4)', color: '#c084fc', cursor: 'pointer', fontSize: '0.8rem', ...S.mono, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    📋 Copy Link
+                  </button>
+                </div>
               </div>
               <div style={{ ...S.glass, width: '100%', textAlign: 'center' }}>
                 <p style={{ margin: 0, color: '#fff', fontWeight: 600, wordBreak: 'break-all' }}>{file?.name}</p>
