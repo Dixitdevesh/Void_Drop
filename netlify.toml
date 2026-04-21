@@ -1,0 +1,14 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Redirect /receive/CODE -> /receive?code=CODE
+# This ensures path-based QR links always work
+[[redirects]]
+  from = "/receive/:code"
+  to = "/receive?code=:code"
+  status = 302
+  force = true

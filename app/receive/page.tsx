@@ -10,24 +10,21 @@ import { receiveFile, downloadBlob } from '@/lib/webrtc/receiver';
 
 const QRScanner = dynamic(() => import('@/components/QRScanner'), { ssr: false });
 
-// Read code from sessionStorage (set by /receive/[code] path route)
-// OR hash OR query param, then clean up
+// Read code from URL — checks all possible locations
 function getCodeFromUrl(): string {
   if (typeof window === 'undefined') return '';
-  // 1. sessionStorage — set by /receive/[code] dynamic route (most reliable)
-  const stored = sessionStorage.getItem('voiddrop_code') || '';
-  if (stored.length === 5) {
-    sessionStorage.removeItem('voiddrop_code'); // consume it
-    return stored.toUpperCase();
-  }
-  // 2. Hash: /receive#XXXXX
+  // 1. Query param: /receive?code=XXXXX (set by Netlify redirect from /receive/CODE)
+  const q = new URLSearchParams(window.location.search).get('code') || '';
+  const qn = q.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+  if (qn.length === 5) return qn;
+  // 2. sessionStorage — set by /receive/[code] dynamic route
+  const stored = (sessionStorage.getItem('voiddrop_code') || '').toUpperCase();
+  if (stored.length === 5) { sessionStorage.removeItem('voiddrop_code'); return stored; }
+  // 3. Hash fallback: /receive#XXXXX
   const hash = window.location.hash.slice(1).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
-  if (hash.length === 5) return hash;
-  // 3. Query param fallback: /receive?code=XXXXX
-  const params = new URLSearchParams(window.location.search);
-  const q = (params.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
-  return q;
+  return hash;
 }
+
 
 /* ── Shared styles ────────────────────────────────────────────────── */
 const S = {
