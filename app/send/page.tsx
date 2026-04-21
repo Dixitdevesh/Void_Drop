@@ -150,7 +150,7 @@ export default function SendPage() {
   }, [file, encryptEnabled, burnMode, cleanup]);
 
   const onDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if (f) setFile(f); };
-  const sessionUrl = typeof window !== 'undefined' ? `${window.location.origin}/receive#${sessionCode}` : '';
+  const sessionUrl = typeof window !== 'undefined' && sessionCode ? `${window.location.origin}/receive/${sessionCode}` : '';
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 1.5rem 2rem' }}>

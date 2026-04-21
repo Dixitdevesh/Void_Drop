@@ -10,13 +10,20 @@ import { receiveFile, downloadBlob } from '@/lib/webrtc/receiver';
 
 const QRScanner = dynamic(() => import('@/components/QRScanner'), { ssr: false });
 
-// Read code from hash OR query param, then clean URL
+// Read code from sessionStorage (set by /receive/[code] path route)
+// OR hash OR query param, then clean up
 function getCodeFromUrl(): string {
   if (typeof window === 'undefined') return '';
-  // Try hash first: /receive#XXXXX
+  // 1. sessionStorage — set by /receive/[code] dynamic route (most reliable)
+  const stored = sessionStorage.getItem('voiddrop_code') || '';
+  if (stored.length === 5) {
+    sessionStorage.removeItem('voiddrop_code'); // consume it
+    return stored.toUpperCase();
+  }
+  // 2. Hash: /receive#XXXXX
   const hash = window.location.hash.slice(1).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
   if (hash.length === 5) return hash;
-  // Fallback: /receive?code=XXXXX
+  // 3. Query param fallback: /receive?code=XXXXX
   const params = new URLSearchParams(window.location.search);
   const q = (params.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
   return q;
