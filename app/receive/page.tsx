@@ -2,13 +2,12 @@
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import dynamic from 'next/dynamic';
 import { formatBytes } from '@/lib/utils/formatBytes';
 import { SignalingClient } from '@/lib/webrtc/signaling';
 import { createPeerConnection, createAnswer, addIceCandidate } from '@/lib/webrtc/peer';
 import { receiveFile, downloadBlob } from '@/lib/webrtc/receiver';
 
-const QRScanner = dynamic(() => import('@/components/QRScanner'), { ssr: false });
+
 
 // Read code from URL — checks all possible locations
 function getCodeFromUrl(): string {
@@ -59,7 +58,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function ReceivePageInner() {
   const router = useRouter();
-  const [mode, setMode] = useState<'input' | 'scan'>('input');
+  const [mode, setMode] = useState<'input'>('input');
   const [codeInput, setCodeInput] = useState('');
   const [status, setStatus] = useState('idle');
   const [initializing, setInitializing] = useState(false); // shows loading when URL has code
@@ -162,7 +161,7 @@ function ReceivePageInner() {
             Receive File
           </h1>
           <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', ...S.muted, ...S.mono }}>
-            Enter the 5-character code or scan QR
+          Enter the 5-character code to receive
           </p>
         </motion.div>
 
@@ -183,70 +182,48 @@ function ReceivePageInner() {
           {status === 'idle' && !initializing && (
 
             <motion.div key="idle" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Mode tabs */}
-              <div style={{ display: 'flex', gap: 6, padding: 4, borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                {(['input', 'scan'] as const).map((m) => (
-                  <button key={m} onClick={() => setMode(m)} style={{
-                    flex: 1, padding: '0.6rem', borderRadius: 10, fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.25s',
-                    background: mode === m ? 'rgba(155,48,255,0.2)' : 'transparent',
-                    border: mode === m ? '1px solid rgba(155,48,255,0.4)' : '1px solid transparent',
-                    color: mode === m ? '#c084fc' : '#7a7898',
-                  }}>
-                    {m === 'input' ? '⌨️  Enter Code' : '📷  Scan QR'}
-                  </button>
-                ))}
-              </div>
-
               <div style={{ ...S.glass, minHeight: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.25rem' }}>
-                {mode === 'input' ? (
-                  <>
-                    <p style={S.label}>Session Code</p>
-                    <input
-                      value={codeInput}
-                      onChange={(e) => setCodeInput(e.target.value.toUpperCase().slice(0, 5))}
-                      onKeyDown={(e) => e.key === 'Enter' && codeInput.length === 5 && joinSession(codeInput)}
-                      placeholder="XXXXX"
-                      maxLength={5}
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: '2.5rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.5em',
-                        textAlign: 'center',
-                        padding: '0.75rem 1rem 0.75rem 1.5rem',
-                        width: '100%',
-                        maxWidth: 280,
-                        background: 'rgba(155,48,255,0.07)',
-                        border: '2px solid rgba(155,48,255,0.3)',
-                        borderRadius: 14,
-                        color: '#fff',
-                        outline: 'none',
-                        transition: 'all 0.3s',
-                      }}
-                      onFocus={(e) => { e.target.style.borderColor = 'rgba(155,48,255,0.7)'; e.target.style.boxShadow = '0 0 30px rgba(155,48,255,0.2)'; }}
-                      onBlur={(e) => { e.target.style.borderColor = 'rgba(155,48,255,0.3)'; e.target.style.boxShadow = 'none'; }}
-                    />
-                    <motion.button
-                      onClick={() => joinSession(codeInput)}
-                      disabled={codeInput.length !== 5}
-                      whileHover={codeInput.length === 5 ? { scale: 1.03 } : {}}
-                      whileTap={codeInput.length === 5 ? { scale: 0.97 } : {}}
-                      style={{
-                        padding: '0.75rem 2rem', borderRadius: 12, fontSize: '0.95rem', fontWeight: 700, cursor: codeInput.length === 5 ? 'pointer' : 'not-allowed',
-                        background: codeInput.length === 5 ? 'linear-gradient(135deg, #00e5ff22, #9b30ff33)' : 'rgba(255,255,255,0.05)',
-                        border: `1px solid ${codeInput.length === 5 ? 'rgba(0,229,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                        color: codeInput.length === 5 ? '#00e5ff' : '#5a5875',
-                        fontFamily: "'Space Grotesk', sans-serif", transition: 'all 0.3s',
-                      }}>
-                      Join Session →
-                    </motion.button>
-                  </>
-                ) : (
-                  <QRScanner
-                    onResult={(code: string) => { setMode('input'); joinSession(code); }}
-                    onError={() => setMode('input')}
-                  />
-                )}
+                <p style={S.label}>Session Code</p>
+                <input
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value.toUpperCase().slice(0, 5))}
+                  onKeyDown={(e) => e.key === 'Enter' && codeInput.length === 5 && joinSession(codeInput)}
+                  placeholder="XXXXX"
+                  maxLength={5}
+                  autoFocus
+                  style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: '2.5rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.5em',
+                    textAlign: 'center',
+                    padding: '0.75rem 1rem 0.75rem 1.5rem',
+                    width: '100%',
+                    maxWidth: 280,
+                    background: 'rgba(155,48,255,0.07)',
+                    border: '2px solid rgba(155,48,255,0.3)',
+                    borderRadius: 14,
+                    color: '#fff',
+                    outline: 'none',
+                    transition: 'all 0.3s',
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = 'rgba(155,48,255,0.7)'; e.target.style.boxShadow = '0 0 30px rgba(155,48,255,0.2)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'rgba(155,48,255,0.3)'; e.target.style.boxShadow = 'none'; }}
+                />
+                <motion.button
+                  onClick={() => joinSession(codeInput)}
+                  disabled={codeInput.length !== 5}
+                  whileHover={codeInput.length === 5 ? { scale: 1.03 } : {}}
+                  whileTap={codeInput.length === 5 ? { scale: 0.97 } : {}}
+                  style={{
+                    padding: '0.75rem 2rem', borderRadius: 12, fontSize: '0.95rem', fontWeight: 700, cursor: codeInput.length === 5 ? 'pointer' : 'not-allowed',
+                    background: codeInput.length === 5 ? 'linear-gradient(135deg, #00e5ff22, #9b30ff33)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${codeInput.length === 5 ? 'rgba(0,229,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                    color: codeInput.length === 5 ? '#00e5ff' : '#5a5875',
+                    fontFamily: "'Space Grotesk', sans-serif", transition: 'all 0.3s',
+                  }}>
+                  Join Session →
+                </motion.button>
               </div>
 
               {error && (
